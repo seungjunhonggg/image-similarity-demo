@@ -1,0 +1,1285 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>Image Similarity Search UI</title>
+  <style>
+    :root{
+      --bg: #ffffff;
+      --surface: #f6fbff;
+      --surface2: #eef6ff;
+      --stroke: #dbe8f5;
+      --stroke2:#cfe1f2;
+
+      --text: #0f172a;
+      --muted:#475569;
+      --muted2:#64748b;
+
+      --accent:#2f7dd1;
+      --accentSoft:#d7ebff;
+      --mintSoft:#dff7f2;
+
+      --danger:#e24b62;
+
+      --shadow: 0 14px 42px rgba(15, 23, 42, .08);
+      --shadow2: 0 10px 30px rgba(15, 23, 42, .06);
+
+      --radius: 22px;
+      --radius2: 16px;
+
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Apple SD Gothic Neo", "Noto Sans KR", "Malgun Gothic", Arial, sans-serif;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--text);
+      background: var(--bg);
+      overflow-x:hidden;
+    }
+
+    .wrap{
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 34px 22px 52px;
+    }
+
+    header{
+      display:flex;
+      align-items:flex-end;
+      justify-content:space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+    .title{
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+    .title h1{
+      font-size: 28px;
+      margin:0;
+      letter-spacing:-.2px;
+      font-weight: 900;
+    }
+    .subtitle{
+      font-size: 14px;
+      color: var(--muted);
+      line-height:1.55;
+    }
+
+    .pillrow{
+      display:flex;
+      flex-wrap:wrap;
+      gap: 10px;
+      justify-content:flex-end;
+    }
+    .pill{
+      font-size:13px;
+      padding: 9px 12px;
+      border:1px solid var(--stroke);
+      background: #fff;
+      border-radius: 999px;
+      color: var(--muted);
+      display:flex;
+      gap:8px;
+      align-items:center;
+      user-select:none;
+      box-shadow: 0 6px 18px rgba(15,23,42,.04);
+      font-weight: 650;
+    }
+    .dot{
+      width:9px;height:9px;border-radius:50%;
+      background: #94a3b8;
+      box-shadow: 0 0 0 4px rgba(47,125,209,.10);
+    }
+    .dot.live{ background: #22c55e; box-shadow: 0 0 0 4px rgba(34,197,94,.14); }
+    .dot.idle{ background: #94a3b8; box-shadow: 0 0 0 4px rgba(148,163,184,.18); }
+    .dot.busy{ background: #f59e0b; box-shadow: 0 0 0 4px rgba(245,158,11,.18); }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 480px 1fr;
+      gap: 18px;
+      margin-top: 18px;
+    }
+    @media (max-width: 1100px){
+      .grid{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, var(--surface), #ffffff);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      overflow:hidden;
+    }
+
+    .sectionTitle{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      margin-bottom: 12px;
+    }
+    .sectionTitle h2{
+      margin:0;
+      font-size: 15px;
+      letter-spacing:.1px;
+      color: var(--text);
+      font-weight: 900;
+    }
+    .hint{
+      font-size:13px;
+      color: var(--muted);
+    }
+
+    /* Dropzone */
+    .dropzone{
+      border: 2px dashed var(--stroke2);
+      background: #fff;
+      border-radius: var(--radius2);
+      padding: 16px;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+      transition: .16s ease;
+      min-height: 280px;
+    }
+    .dropzone.drag{
+      border-color: rgba(47,125,209,.55);
+      background: var(--accentSoft);
+      transform: translateY(-1px);
+    }
+    .dzTop{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .dzLabel{
+      display:flex; gap:12px; align-items:center;
+      color: var(--text);
+      font-size: 14px;
+    }
+    .icon{
+      width:40px;height:40px;border-radius:12px;
+      background: var(--surface2);
+      border: 1px solid var(--stroke);
+      display:grid; place-items:center;
+    }
+    .dzBody{ display:grid; gap: 12px; }
+
+    .preview{
+      display:flex;
+      gap: 12px;
+      align-items:flex-start;
+      padding: 12px;
+      border-radius: 16px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, #fff, var(--surface));
+      box-shadow: var(--shadow2);
+    }
+    .thumb{
+      width: 104px;
+      height: 104px;
+      border-radius: 18px;
+      overflow:hidden;
+      border: 1px solid var(--stroke);
+      flex: 0 0 auto;
+      background: var(--surface2);
+      display:grid; place-items:center;
+      color: var(--muted);
+      font-weight: 800;
+    }
+    .thumb img{ width:100%; height:100%; object-fit:cover; display:block; }
+
+    .pmeta{
+      display:flex;
+      flex-direction:column;
+      gap: 8px;
+      min-width: 0;
+      flex:1;
+    }
+    .fname{
+      font-size: 14px;
+      color: var(--text);
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 900;
+    }
+    .fsub{
+      font-size:13px;
+      color: var(--muted);
+      font-family: var(--mono);
+      line-height: 1.4;
+    }
+    .btnrow{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      margin-top: 2px;
+    }
+
+    button{
+      font-family: inherit;
+      border: 1px solid var(--stroke);
+      background: #fff;
+      color: var(--text);
+      border-radius: 14px;
+      padding: 11px 14px;
+      cursor:pointer;
+      transition: .14s ease;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap: 8px;
+      user-select:none;
+      box-shadow: 0 8px 22px rgba(15,23,42,.06);
+      font-weight: 850;
+      font-size: 13px;
+    }
+    button:hover{ transform: translateY(-1px); background: var(--surface); }
+    button:active{ transform: translateY(0px); }
+
+    button.primary{
+      border-color: rgba(47,125,209,.35);
+      background: linear-gradient(180deg, #ffffff, var(--accentSoft));
+      color: #0b2a4d;
+    }
+    button.primary:hover{
+      border-color: rgba(47,125,209,.55);
+      background: linear-gradient(180deg, #ffffff, #cfe6ff);
+    }
+    button.ghost{
+      background: #fff;
+      box-shadow: none;
+    }
+    button.danger{
+      border-color: rgba(226,75,98,.35);
+      background: linear-gradient(180deg, #fff, rgba(226,75,98,.10));
+      color: #6b0f1d;
+    }
+
+    button:disabled{
+      opacity:.55;
+      cursor:not-allowed;
+      transform:none !important;
+      box-shadow:none;
+    }
+    .small{
+      font-size:12px;
+      padding: 9px 11px;
+      border-radius: 13px;
+      box-shadow: none;
+      font-weight: 850;
+    }
+    .fileInput{ display:none; }
+
+    .emptyState{
+      border-radius: 16px;
+      padding: 16px 14px;
+      background: linear-gradient(180deg, #ffffff, var(--surface));
+      border: 1px solid var(--stroke);
+      color: var(--muted);
+      font-size: 14px;
+      line-height:1.6;
+    }
+
+    /* Briefing box */
+    .briefing{
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+    }
+    .textarea{
+      width:100%;
+      min-height: 340px;
+      resize: vertical;
+      border-radius: 18px;
+      border: 1px solid var(--stroke);
+      background: #fff;
+      color: var(--text);
+      padding: 16px 16px;
+      outline: none;
+      font-size: 14px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      box-shadow: inset 0 0 0 1px rgba(15,23,42,.03);
+    }
+    .textarea:focus{
+      border-color: rgba(47,125,209,.45);
+      box-shadow: 0 0 0 5px rgba(47,125,209,.10);
+    }
+
+    .statusline{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .statusleft{
+      display:flex; align-items:center; gap:10px;
+    }
+    .spinner{
+      width: 16px; height: 16px;
+      border-radius: 50%;
+      border: 2px solid rgba(71,85,105,.25);
+      border-top-color: rgba(47,125,209,.9);
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin{ to { transform: rotate(360deg); } }
+
+    /* Slides */
+    .slides{ margin-top: 4px; display:flex; flex-direction:column; gap: 10px; }
+    .slidesGrid{
+      display:grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 1100px){
+      .slidesGrid{ grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    @media (max-width: 640px){
+      .slidesGrid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    .slide{
+      border-radius: 16px;
+      overflow:hidden;
+      border: 1px solid var(--stroke);
+      background: #fff;
+      cursor:pointer;
+      transition: .14s ease;
+      box-shadow: 0 10px 26px rgba(15,23,42,.06);
+    }
+    .slide:hover{ transform: translateY(-2px); }
+    .slide img{
+      width:100%;
+      height: 120px;
+      object-fit:cover;
+      display:block;
+      background: #fff;
+    }
+    .slideCap{
+      padding: 9px 10px;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--stroke);
+      background: var(--surface);
+      overflow:hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-weight: 750;
+    }
+
+    /* Modal */
+    .modalBack{
+      position:fixed; inset:0;
+      background: rgba(15,23,42,.45);
+      backdrop-filter: blur(4px);
+      display:none;
+      align-items:center;
+      justify-content:center;
+      padding: 18px;
+      z-index: 999;
+    }
+    .modalBack.show{ display:flex; }
+
+    .modal{
+      width:min(1040px, 96vw);
+      border-radius: 20px;
+      border: 1px solid var(--stroke);
+      background: #fff;
+      box-shadow: 0 22px 80px rgba(15,23,42,.25);
+      overflow:hidden;
+    }
+    .modalHeader{
+      padding: 14px 16px;
+      display:flex; align-items:center; justify-content:space-between;
+      border-bottom: 1px solid var(--stroke);
+      background: linear-gradient(180deg, #fff, var(--surface));
+    }
+    .modalTitle{
+      font-size: 14px;
+      color: var(--text);
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      font-weight: 950;
+    }
+    .badge{
+      font-size:12px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--stroke);
+      background: var(--surface2);
+      color: var(--muted);
+      font-family: var(--mono);
+      font-weight: 800;
+    }
+    .modalBody{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      padding: 14px;
+    }
+    @media(max-width: 900px){
+      .modalBody{ grid-template-columns:1fr; }
+    }
+    .modalImg{
+      border-radius: 18px;
+      overflow:hidden;
+      border: 1px solid var(--stroke);
+      background: var(--surface);
+      min-height: 260px;
+    }
+    .modalImg img{ width:100%; height:100%; object-fit:contain; display:block; background: #fff; }
+
+    .kv{
+      border-radius: 18px;
+      border: 1px solid var(--stroke);
+      background: #fff;
+      overflow:hidden;
+    }
+    .kv table{
+      width:100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    .kv th, .kv td{
+      padding: 11px 11px;
+      border-bottom: 1px solid var(--stroke);
+      vertical-align: top;
+    }
+    .kv th{
+      width: 32%;
+      color: var(--text);
+      font-weight: 950;
+      background: var(--surface);
+    }
+    .kv td{
+      color: var(--muted);
+      word-break: break-word;
+      font-family: var(--mono);
+    }
+
+    .modalFooter{
+      display:flex;
+      justify-content:flex-end;
+      gap: 10px;
+      padding: 12px 14px;
+      border-top: 1px solid var(--stroke);
+      background: linear-gradient(180deg, var(--surface), #fff);
+    }
+
+    .hr{
+      height:1px;
+      background: var(--stroke);
+      margin: 14px 0;
+    }
+    .muted{ color: var(--muted); }
+    .mono{ font-family: var(--mono); }
+
+    /* Toast */
+    .toast{
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 1000;
+      padding: 11px 13px;
+      border-radius: 16px;
+      border: 1px solid var(--stroke);
+      background: #fff;
+      color: var(--text);
+      box-shadow: 0 16px 50px rgba(15,23,42,.14);
+      font-size: 13px;
+      display:none;
+      max-width: min(640px, 92vw);
+      font-weight: 750;
+    }
+    .toast.show{ display:block; animation: pop .16s ease; }
+    @keyframes pop{ from{ transform: translateY(6px); opacity:0 } to{ transform: translateY(0); opacity:1 } }
+
+    /* Help box (collapsible + removable) */
+    .helpWrap{
+      margin-top: 18px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, var(--mintSoft), #ffffff);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow2);
+      overflow:hidden;
+    }
+    .helpHeader{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--stroke);
+      background: linear-gradient(180deg, #ffffff, rgba(223,247,242,.55));
+    }
+    .helpHeader .left{
+      display:flex; flex-direction:column; gap:4px;
+      min-width: 0;
+    }
+    .helpTitle{
+      font-weight: 950;
+      letter-spacing: -.1px;
+    }
+    .helpSub{
+      font-size: 13px;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .helpActions{
+      display:flex;
+      gap: 8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
+    }
+    .helpBody{
+      padding: 14px 16px 16px;
+      display:block;
+      background: #fff;
+    }
+    .helpBody.collapsed{ display:none; }
+    .helpBody pre{
+      margin: 10px 0 0;
+      padding: 12px 12px;
+      border-radius: 16px;
+      border: 1px solid var(--stroke);
+      background: linear-gradient(180deg, #ffffff, var(--surface));
+      overflow:auto;
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.6;
+      color: #0b2a4d;
+    }
+    .helpBody ul{
+      margin: 8px 0 0 18px;
+      color: var(--muted);
+      line-height: 1.7;
+      font-size: 14px;
+    }
+    .helpBody code{
+      font-family: var(--mono);
+      background: var(--surface);
+      border: 1px solid var(--stroke);
+      padding: 2px 6px;
+      border-radius: 10px;
+      color: #0b2a4d;
+      font-weight: 700;
+      font-size: 12.5px;
+    }
+
+    /* reopen floating button */
+    .reopen{
+      position: fixed;
+      left: 18px;
+      bottom: 18px;
+      z-index: 1001;
+      display:none;
+    }
+    .reopen.show{ display:block; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="title">
+        <h1>이미지 유사도 검색</h1>
+        <div class="subtitle">
+          이미지 업로드 → 실행 → 요약 브리핑 출력 → 아래에 관련 슬라이드 이미지 첨부
+        </div>
+      </div>
+      <div class="pillrow">
+        <div class="pill"><span id="stateDot" class="dot idle"></span><span id="stateText">Idle</span></div>
+        <div class="pill">TopK: <span class="mono" id="topKLabel">5</span></div>
+        <div class="pill">API Base: <span class="mono" id="apiLabel">(set)</span></div>
+      </div>
+    </header>
+
+    <div class="grid">
+      <!-- LEFT -->
+      <div class="card">
+        <div class="sectionTitle">
+          <h2>입력 이미지</h2>
+          <span class="hint">드래그&드롭 또는 파일 선택</span>
+        </div>
+
+        <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="이미지 업로드 영역">
+          <div class="dzTop">
+            <div class="dzLabel">
+              <div class="icon" aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                  <path d="M12 16V3M12 3l-4 4M12 3l4 4" stroke="#0f172a" stroke-opacity=".85" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5" stroke="#0f172a" stroke-opacity=".5" stroke-width="1.7" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <div>
+                <div style="font-weight:950; font-size:14px;">이미지를 여기로 끌어다 놓기</div>
+                <div class="muted" style="font-size:13px; margin-top:2px;">PNG/JPG/WebP 권장</div>
+              </div>
+            </div>
+
+            <button id="btnPick" class="small ghost" type="button">파일 선택</button>
+            <input id="fileInput" class="fileInput" type="file" accept="image/*" />
+          </div>
+
+          <div class="dzBody">
+            <div id="emptyState" class="emptyState">
+              업로드한 이미지를 기반으로 유사도 검색을 수행하고, 관련 메타데이터를 요약하여 브리핑합니다.
+              <div class="hr"></div>
+              결과 슬라이드는 브리핑 아래 썸네일로 첨부됩니다.
+            </div>
+
+            <div id="previewWrap" style="display:none;">
+              <div class="preview">
+                <div class="thumb" id="thumbBox"><span class="muted">IMG</span></div>
+                <div class="pmeta">
+                  <div class="fname" id="fileName">-</div>
+                  <div class="fsub" id="fileMeta">-</div>
+                  <div class="btnrow">
+                    <button id="btnRun" class="primary" type="button">
+                      <span>실행</span>
+                      <span class="mono" style="opacity:.7;">(Search → Brief)</span>
+                    </button>
+                    <button id="btnClear" class="danger" type="button">제거</button>
+                    <button id="btnCopySummary" class="small ghost" type="button" disabled>브리핑 복사</button>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex; gap:12px; align-items:center; margin-top: 12px;">
+                <label class="muted" style="font-size:13px; font-weight:800;">Top-K</label>
+                <input id="topK" type="range" min="1" max="10" value="5" style="width:100%;">
+                <span class="mono" id="topKValue" style="font-size:13px; color: var(--text); font-weight:900;">5</span>
+              </div>
+
+              <div class="hr"></div>
+              <div class="hint">
+                실제 API 연동은 맨 아래 안내 박스에 있는 <code>API_BASE_URL</code>, <code>similaritySearchAPI()</code>, <code>summarizeAPI()</code>만 수정하면 됩니다.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="card">
+        <div class="sectionTitle">
+          <h2>브리핑</h2>
+          <span class="hint">LLM 요약 결과 출력 영역</span>
+        </div>
+
+        <div class="briefing">
+          <div class="statusline">
+            <div class="statusleft">
+              <div id="spinner" class="spinner" style="display:none;"></div>
+              <div id="statusText">대기 중…</div>
+            </div>
+            <div class="mono" id="timeText">--:--</div>
+          </div>
+
+          <textarea id="briefBox" class="textarea" placeholder="여기에 LLM 브리핑이 출력됩니다." spellcheck="false" readonly></textarea>
+
+          <div class="slides">
+            <div class="sectionTitle" style="margin:0;">
+              <h2>분석 이력 슬라이드</h2>
+              <span class="hint">클릭하면 크게 보기</span>
+            </div>
+            <div id="slidesGrid" class="slidesGrid"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Help box -->
+    <div id="helpWrap" class="helpWrap">
+      <div class="helpHeader">
+        <div class="left">
+          <div class="helpTitle">백엔드 연동 가이드 (필요할 때만 참고)</div>
+          <div class="helpSub">이 박스는 접거나(숨김) 다시 열 수 있고, 원하면 완전히 삭제할 수도 있어요.</div>
+        </div>
+        <div class="helpActions">
+          <button id="btnToggleHelp" class="small ghost" type="button">접기</button>
+          <button id="btnRemoveHelp" class="small danger" type="button">완전히 삭제</button>
+        </div>
+      </div>
+
+      <div id="helpBody" class="helpBody">
+        <div style="font-weight:900; margin-bottom:6px;">1) API_BASE_URL 설정</div>
+        <ul>
+          <li><code>API_BASE_URL</code>을 실제 백엔드 주소로 바꾸세요. 예: <code>http://localhost:8000</code></li>
+          <li>정적 파일(이 HTML)을 파일로 열면( <code>file://</code> ) CORS 이슈가 날 수 있어요. 가능하면 간단히 로컬 서버로 띄우세요. (예: <code>python -m http.server 8080</code>)</li>
+        </ul>
+
+        <div style="font-weight:900; margin-top:12px; margin-bottom:6px;">2) 유사도 검색 API 연결 (멀티파트 업로드)</div>
+        <ul>
+          <li>아래 함수 <code>similaritySearchAPI(file, topK)</code> 안의 <code>fetch</code>를 사용합니다.</li>
+          <li>요청: <code>POST /similarity-search</code> (form-data: <code>image</code>, <code>topK</code>)</li>
+          <li>응답은 최소 <code>{ topK, matches, slides }</code> 형태면 됩니다. (필드명은 아래 예시와 동일하게 맞추면 UI가 바로 동작)</li>
+        </ul>
+
+        <pre>// ✅ 여기를 바꾸세요: API 기본 주소
+const API_BASE_URL = "http://localhost:8000";
+
+// ✅ 유사도 검색 API (multipart/form-data)
+async function similaritySearchAPI(file, topK){
+  const form = new FormData();
+  form.append("image", file);
+  form.append("topK", String(topK));
+
+  const res = await fetch(`${API_BASE_URL}/similarity-search`, {
+    method: "POST",
+    body: form
+  });
+
+  if(!res.ok){
+    const text = await res.text().catch(()=> "");
+    throw new Error(`similarity-search failed: ${res.status} ${text}`);
+  }
+
+  // 기대 응답 예시:
+  // {
+  //   "topK": 5,
+  //   "matches": [
+  //     { "id":"rec-001", "score":0.93, "metadata":{...} }
+  //   ],
+  //   "slides": [
+  //     { "id":"slide-1", "title":"...", "imageUrl":"https://...", "meta":{...} }
+  //   ]
+  // }
+  return await res.json();
+}</pre>
+
+        <div style="font-weight:900; margin-top:12px; margin-bottom:6px;">3) 요약(LLM) API 연결 (JSON)</div>
+        <ul>
+          <li><code>summarizeAPI(simResult)</code>에서 <code>POST /summarize</code>로 JSON을 보냅니다.</li>
+          <li>응답은 <code>{ "summary": "..." }</code>만 주면 됩니다.</li>
+          <li>요약 생성에 필요한 정보는 <code>simResult</code> 전체를 그대로 보내도 되고, 필요한 부분만 추려서 보내도 됩니다.</li>
+        </ul>
+
+        <pre>// ✅ 요약 API (application/json)
+async function summarizeAPI(simResult){
+  const res = await fetch(`${API_BASE_URL}/summarize`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(simResult)
+  });
+
+  if(!res.ok){
+    const text = await res.text().catch(()=> "");
+    throw new Error(`summarize failed: ${res.status} ${text}`);
+  }
+
+  const data = await res.json();
+  // 기대 응답: { "summary": "LLM이 만든 브리핑 텍스트..." }
+  return data.summary;
+}</pre>
+
+        <div style="font-weight:900; margin-top:12px; margin-bottom:6px;">4) 슬라이드 이미지 연결 방식</div>
+        <ul>
+          <li><code>slides[].imageUrl</code>은 아래 중 아무거나 가능해요:
+            <ul>
+              <li>정적 URL (예: <code>https://.../slide.png</code>)</li>
+              <li>백엔드에서 반환하는 base64 Data URL (예: <code>data:image/png;base64,...</code>)</li>
+              <li>프록시 엔드포인트 (예: <code>/files/slide/123</code>)</li>
+            </ul>
+          </li>
+        </ul>
+
+        <div style="font-weight:900; margin-top:12px; margin-bottom:6px;">5) CORS 체크리스트</div>
+        <ul>
+          <li>브라우저에서 호출하려면 백엔드에 CORS 허용이 필요합니다.</li>
+          <li>예: <code>Access-Control-Allow-Origin: *</code> 또는 특정 origin 허용</li>
+          <li>파일 업로드(multipart)와 JSON 호출 둘 다 허용되어야 합니다.</li>
+        </ul>
+
+        <div class="hr"></div>
+        <div class="hint">원하면, “유사도 Top-5 기록 카드(썸네일/score/lot_id/defect)” 영역도 브리핑 아래에 같이 붙여서 완성형으로 더 만들어줄 수 있어요.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reopen button -->
+  <div id="reopen" class="reopen">
+    <button id="btnReopenHelp" class="small" type="button">백엔드 연동 가이드 다시 열기</button>
+  </div>
+
+  <!-- Modal -->
+  <div id="modalBack" class="modalBack" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modalHeader">
+        <div class="modalTitle">
+          <span id="modalTitleText">Preview</span>
+          <span id="modalBadge" class="badge">--</span>
+        </div>
+        <button id="btnCloseModal" class="small ghost" type="button">닫기</button>
+      </div>
+      <div class="modalBody">
+        <div class="modalImg"><img id="modalImg" alt="preview"/></div>
+        <div class="kv">
+          <table><tbody id="modalTable"></tbody></table>
+        </div>
+      </div>
+      <div class="modalFooter">
+        <button id="btnCopyMeta" class="small" type="button">메타데이터 복사</button>
+        <button id="btnDownloadImg" class="small ghost" type="button">이미지 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script>
+    // =========================
+    // Config (EDIT THIS)
+    // =========================
+    // 실제 백엔드 주소로 바꾸세요. 예: "http://localhost:8000"
+    const API_BASE_URL = "http://localhost:8000";
+
+    const $ = (id) => document.getElementById(id);
+
+    function formatBytes(bytes){
+      if(!Number.isFinite(bytes)) return "-";
+      const units = ["B","KB","MB","GB"];
+      let v = bytes, i = 0;
+      while(v >= 1024 && i < units.length-1){ v/=1024; i++; }
+      return `${v.toFixed(i===0?0:1)} ${units[i]}`;
+    }
+    function nowTime(){
+      const d = new Date();
+      const hh = String(d.getHours()).padStart(2,"0");
+      const mm = String(d.getMinutes()).padStart(2,"0");
+      return `${hh}:${mm}`;
+    }
+    function toast(msg){
+      const t = $("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(()=>t.classList.remove("show"), 1700);
+    }
+
+    function setState(state, label){
+      const dot = $("stateDot");
+      const txt = $("stateText");
+      dot.classList.remove("idle","busy","live");
+      if(state==="idle") dot.classList.add("idle");
+      if(state==="busy") dot.classList.add("busy");
+      if(state==="live") dot.classList.add("live");
+      txt.textContent = label;
+    }
+
+    function setBusy(isBusy, status){
+      $("spinner").style.display = isBusy ? "block" : "none";
+      $("statusText").textContent = status || (isBusy ? "처리 중..." : "대기 중…");
+      $("timeText").textContent = nowTime();
+      setState(isBusy ? "busy" : "idle", isBusy ? "Running" : "Idle");
+      $("btnRun").disabled = isBusy || !window.__selectedFile;
+      $("btnClear").disabled = isBusy;
+      $("btnPick").disabled = isBusy;
+      $("topK").disabled = isBusy;
+    }
+
+    async function typeText(el, text, msPerChar = 7){
+      el.value = "";
+      for(let i=0;i<text.length;i++){
+        el.value += text[i];
+        if(i % 6 === 0) el.scrollTop = el.scrollHeight;
+        await new Promise(r => setTimeout(r, msPerChar));
+      }
+      el.scrollTop = el.scrollHeight;
+    }
+
+    // Canvas-based slide placeholder (replace with real slide imageUrl from backend)
+    function makeSlideDataURL(index, title, subtitle){
+      const w = 1200, h = 720;
+      const c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      const ctx = c.getContext("2d");
+
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0,0,w,h);
+
+      ctx.fillStyle = "rgba(47,125,209,0.12)";
+      roundRect(ctx, 40, 40, w-80, 120, 22);
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(15,23,42,0.10)";
+      ctx.lineWidth = 6;
+      roundRect(ctx, 40, 40, w-80, h-80, 26);
+      ctx.stroke();
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "900 44px system-ui, -apple-system, Segoe UI, Arial";
+      ctx.fillText(`Slide ${index}`, 74, 118);
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "900 56px system-ui, -apple-system, Segoe UI, Arial";
+      wrapText(ctx, title, 74, 250, w-148, 70);
+
+      ctx.fillStyle = "rgba(71,85,105,0.95)";
+      ctx.font = "700 30px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas";
+      wrapText(ctx, subtitle, 74, 370, w-148, 44);
+
+      ctx.fillStyle = "rgba(47,125,209,0.07)";
+      roundRect(ctx, 62, 440, w-124, 210, 18);
+      ctx.fill();
+
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "750 30px system-ui, -apple-system, Segoe UI, Arial";
+      const bullets = [
+        "• 유사도 Top-K 결과 기반 핵심 요약",
+        "• 원인 후보 및 재발 패턴 정리",
+        "• 다음 액션(확인할 Lot / 조건 / 레시피)"
+      ];
+      let y = 500;
+      bullets.forEach(b=>{
+        ctx.fillText(b, 92, y);
+        y += 58;
+      });
+
+      return c.toDataURL("image/png");
+    }
+
+    function roundRect(ctx, x, y, w, h, r){
+      const rr = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x+rr, y);
+      ctx.arcTo(x+w, y, x+w, y+h, rr);
+      ctx.arcTo(x+w, y+h, x, y+h, rr);
+      ctx.arcTo(x, y+h, x, y, rr);
+      ctx.arcTo(x, y, x+w, y, rr);
+      ctx.closePath();
+    }
+    function wrapText(ctx, text, x, y, maxWidth, lineHeight){
+      const words = String(text || "").split(" ");
+      let line = "";
+      for(let n=0; n<words.length; n++){
+        const testLine = line + words[n] + " ";
+        const metrics = ctx.measureText(testLine);
+        if(metrics.width > maxWidth && n > 0){
+          ctx.fillText(line, x, y);
+          line = words[n] + " ";
+          y += lineHeight;
+        }else{
+          line = testLine;
+        }
+      }
+      ctx.fillText(line, x, y);
+    }
+
+    // DOM refs
+    const dropzone = $("dropzone");
+    const fileInput = $("fileInput");
+    const btnPick = $("btnPick");
+    const btnRun = $("btnRun");
+    const btnClear = $("btnClear");
+    const btnCopySummary = $("btnCopySummary");
+    const topK = $("topK");
+    const topKValue = $("topKValue");
+    const topKLabel = $("topKLabel");
+    const apiLabel = $("apiLabel");
+
+    const briefBox = $("briefBox");
+    const emptyState = $("emptyState");
+    const previewWrap = $("previewWrap");
+    const thumbBox = $("thumbBox");
+    const fileName = $("fileName");
+    const fileMeta = $("fileMeta");
+    const slidesGrid = $("slidesGrid");
+
+    // Help box controls
+    const helpWrap = $("helpWrap");
+    const helpBody = $("helpBody");
+    const btnToggleHelp = $("btnToggleHelp");
+    const btnRemoveHelp = $("btnRemoveHelp");
+    const reopen = $("reopen");
+    const btnReopenHelp = $("btnReopenHelp");
+
+    // Modal
+    const modalBack = $("modalBack");
+    const modalImg = $("modalImg");
+    const modalTitleText = $("modalTitleText");
+    const modalBadge = $("modalBadge");
+    const modalTable = $("modalTable");
+    const btnCloseModal = $("btnCloseModal");
+    const btnCopyMeta = $("btnCopyMeta");
+    const btnDownloadImg = $("btnDownloadImg");
+
+    // initial
+    window.__selectedFile = null;
+    window.__lastResult = null;
+    setState("idle","Idle");
+    apiLabel.textContent = API_BASE_URL;
+
+    topK.addEventListener("input", () => {
+      topKValue.textContent = topK.value;
+      topKLabel.textContent = topK.value;
+    });
+
+    btnPick.addEventListener("click", () => fileInput.click());
+
+    fileInput.addEventListener("change", (e) => {
+      const f = e.target.files?.[0];
+      if(f) loadFile(f);
+    });
+
+    dropzone.addEventListener("click", (e) => {
+      if(e.target.tagName.toLowerCase() === "button") return;
+      fileInput.click();
+    });
+
+    dropzone.addEventListener("dragover", (e) => { e.preventDefault(); dropzone.classList.add("drag"); });
+    dropzone.addEventListener("dragleave", () => dropzone.classList.remove("drag"));
+    dropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("drag");
+      const f = e.dataTransfer.files?.[0];
+      if(f) loadFile(f);
+    });
+
+    btnClear.addEventListener("click", () => {
+      window.__selectedFile = null;
+      fileInput.value = "";
+      emptyState.style.display = "block";
+      previewWrap.style.display = "none";
+      thumbBox.innerHTML = '<span class="muted">IMG</span>';
+      briefBox.value = "";
+      slidesGrid.innerHTML = "";
+      btnCopySummary.disabled = true;
+      window.__lastResult = null;
+      setState("idle","Idle");
+      toast("이미지 제거 완료");
+    });
+
+    btnCopySummary.addEventListener("click", async () => {
+      try{
+        await navigator.clipboard.writeText(briefBox.value || "");
+        toast("브리핑 텍스트 복사됨");
+      }catch{
+        toast("복사 실패 (권한/보안 설정 확인)");
+      }
+    });
+
+    btnRun.addEventListener("click", async () => {
+      if(!window.__selectedFile){
+        toast("먼저 이미지를 업로드해 주세요.");
+        return;
+      }
+      await runSimilarityAndBriefing();
+    });
+
+    // Help box
+    btnToggleHelp.addEventListener("click", () => {
+      const isCollapsed = helpBody.classList.toggle("collapsed");
+      btnToggleHelp.textContent = isCollapsed ? "펼치기" : "접기";
+    });
+    btnRemoveHelp.addEventListener("click", () => {
+      helpWrap.remove();
+      reopen.classList.add("show");
+      toast("가이드 박스를 제거했습니다.");
+    });
+    btnReopenHelp.addEventListener("click", () => {
+      // recreate by reloading? simplest: show instruction to refresh
+      toast("이 페이지를 새로고침하면 가이드 박스가 다시 표시됩니다.");
+    });
+
+    // Modal events
+    btnCloseModal.addEventListener("click", closeModal);
+    modalBack.addEventListener("click", (e) => { if(e.target === modalBack) closeModal(); });
+    window.addEventListener("keydown", (e) => {
+      if(e.key === "Escape" && modalBack.classList.contains("show")) closeModal();
+    });
+    btnCopyMeta.addEventListener("click", async () => {
+      const meta = window.__modalMeta ? JSON.stringify(window.__modalMeta, null, 2) : "";
+      try{ await navigator.clipboard.writeText(meta); toast("메타데이터 복사됨"); }
+      catch{ toast("복사 실패"); }
+    });
+    btnDownloadImg.addEventListener("click", () => {
+      const url = modalImg.src;
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "slide.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+    });
+
+    function closeModal(){
+      modalBack.classList.remove("show");
+      window.__modalMeta = null;
+    }
+    function openModal({ title, badge, imageUrl, meta }){
+      modalTitleText.textContent = title || "Preview";
+      modalBadge.textContent = badge || "--";
+      modalImg.src = imageUrl;
+      window.__modalMeta = meta || {};
+
+      modalTable.innerHTML = "";
+      const entries = Object.entries(meta || {});
+      if(entries.length === 0){
+        modalTable.innerHTML = `<tr><th>info</th><td>(no metadata)</td></tr>`;
+      }else{
+        for(const [k,v] of entries){
+          const tr = document.createElement("tr");
+          const th = document.createElement("th");
+          const td = document.createElement("td");
+          th.textContent = k;
+          td.textContent = (typeof v === "string") ? v : JSON.stringify(v);
+          tr.appendChild(th); tr.appendChild(td);
+          modalTable.appendChild(tr);
+        }
+      }
+      modalBack.classList.add("show");
+    }
+
+    async function loadFile(file){
+      if(!file.type.startsWith("image/")){
+        toast("이미지 파일만 업로드 가능합니다.");
+        return;
+      }
+      window.__selectedFile = file;
+
+      emptyState.style.display = "none";
+      previewWrap.style.display = "block";
+      fileName.textContent = file.name;
+      fileMeta.textContent = `${file.type} • ${formatBytes(file.size)} • lastModified ${new Date(file.lastModified).toLocaleString()}`;
+      btnRun.disabled = false;
+
+      const url = URL.createObjectURL(file);
+      const img = document.createElement("img");
+      img.src = url;
+      img.onload = () => URL.revokeObjectURL(url);
+      thumbBox.innerHTML = "";
+      thumbBox.appendChild(img);
+
+      toast("이미지 업로드 완료");
+    }
+
+    async function runSimilarityAndBriefing(){
+      try{
+        setBusy(true, "유사도 검색 중…");
+        briefBox.value = "";
+        slidesGrid.innerHTML = "";
+        btnCopySummary.disabled = true;
+
+        const k = Number(topK.value);
+
+        // 1) Similarity search (BACKEND)
+        const sim = await similaritySearchAPI(window.__selectedFile, k);
+
+        setBusy(true, "브리핑 생성 중…");
+
+        // 2) Summarize (BACKEND)
+        const summary = await summarizeAPI(sim);
+
+        // show text with typing effect
+        await typeText(briefBox, summary, 6);
+
+        // 3) render slides
+        renderSlides(sim.slides);
+
+        window.__lastResult = sim;
+        btnCopySummary.disabled = false;
+
+        setBusy(false, "완료");
+        setState("live","Ready");
+        toast("완료");
+      }catch(err){
+        console.error(err);
+        setBusy(false, "에러 발생");
+        setState("idle","Idle");
+        toast("실행 실패: 콘솔 로그를 확인하세요.");
+      }
+    }
+
+    // =========================
+    // Backend functions (EDIT THESE)
+    // =========================
+    async function similaritySearchAPI(file, topK){
+      // ✅ 실제 연동 시: 안내 박스에 있는 fetch 예시 그대로 사용하세요.
+      // 지금은 UI 확인을 위해 최소한의 placeholder 결과를 반환합니다.
+      await wait(420);
+
+      const slides = Array.from({length: 6}).map((_,i)=>{
+        const title = ["요약 결론", "유사도 Top-K", "원인 후보", "재발 패턴", "권장 액션", "참고"][i] || `Slide ${i+1}`;
+        const subtitle = `query image 기반 분석 / 상위 이력 ${topK}건 참조`;
+        return {
+          id: `slide-${i+1}`,
+          title,
+          imageUrl: makeSlideDataURL(i+1, title, subtitle),
+          meta: { slide_index: i+1, topK, generated: new Date().toISOString() }
+        };
+      });
+
+      return {
+        topK,
+        matches: [],
+        slides
+      };
+    }
+
+    async function summarizeAPI(simResult){
+      // ✅ 실제 연동 시: 안내 박스의 fetch 예시대로 교체
+      await wait(280);
+      return [
+        "요약 브리핑(예시)",
+        "",
+        `- 유사도 검색을 수행했고, 관련 이력과 슬라이드를 준비했습니다.`,
+        `- Top-K: ${simResult.topK}`,
+        "",
+        "- 핵심 포인트:",
+        "  • 상위 결과의 메타데이터를 기반으로 공정/불량 패턴을 요약합니다.",
+        "  • 반복되는 원인 후보를 묶어 다음 액션을 제안합니다.",
+        "",
+        "- 다음 액션:",
+        "  1) 상위 lot 기준으로 주요 공정조건 비교",
+        "  2) 후보 defect 별 대표 이미지/ROI 검토",
+        "  3) 재발 lot에 대한 원인 feature 산출"
+      ].join("\n");
+    }
+
+    function wait(ms){ return new Promise(r=>setTimeout(r, ms)); }
+
+    function renderSlides(slides){
+      slidesGrid.innerHTML = "";
+      if(!slides || slides.length === 0){
+        slidesGrid.innerHTML = `<div class="muted" style="grid-column: 1 / -1; padding: 8px 2px;">슬라이드가 없습니다.</div>`;
+        return;
+      }
+      slides.forEach((s, idx) => {
+        const div = document.createElement("div");
+        div.className = "slide";
+        div.title = "클릭하여 크게 보기";
+
+        const img = document.createElement("img");
+        img.src = s.imageUrl;
+        img.alt = s.title || `Slide ${idx+1}`;
+
+        const cap = document.createElement("div");
+        cap.className = "slideCap";
+        cap.textContent = s.title || `Slide ${idx+1}`;
+
+        div.appendChild(img);
+        div.appendChild(cap);
+
+        div.addEventListener("click", () => {
+          openModal({
+            title: s.title || "Slide Preview",
+            badge: s.id || `slide-${idx+1}`,
+            imageUrl: s.imageUrl,
+            meta: s.meta || {}
+          });
+        });
+
+        slidesGrid.appendChild(div);
+      });
+    }
+  </script>
+</body>
+</html>

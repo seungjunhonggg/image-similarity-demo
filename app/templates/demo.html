@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Image Similarity Archive Demo</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@400;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="{{ url_for('static', path='css/demo.css') }}" />
+  <script defer src="{{ url_for('static', path='js/demo.js') }}"></script>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div class="hero-title stagger" style="--delay: 0.05s;">
+        <div class="eyebrow">IMAGE SIMILARITY ARCHIVE</div>
+        <h1>이미지 유사도 분석 데모</h1>
+        <p>이미지를 올리면 유사도 검색을 수행하고, 메타데이터 기반 LLM 요약 브리핑을 생성합니다.</p>
+      </div>
+      <div class="hero-status">
+        <div class="chip stagger" style="--delay: 0.1s;">
+          <span id="stateDot" class="dot idle"></span>
+          <span id="stateText">Idle</span>
+        </div>
+        <div class="chip stagger" style="--delay: 0.15s;">TopK <span id="topKLabel" class="mono">5</span></div>
+        <div class="chip stagger" style="--delay: 0.2s;">API <span id="apiLabel" class="mono">mock</span></div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="panel panel-upload stagger" style="--delay: 0.25s;">
+        <div class="panel-head">
+          <div>
+            <h2>1. 입력 이미지</h2>
+            <p>Drag & drop 또는 파일 선택</p>
+          </div>
+          <button id="btnPick" class="btn ghost" type="button">파일 선택</button>
+        </div>
+
+        <div id="dropzone" class="dropzone" role="button" tabindex="0" aria-label="이미지 업로드 영역">
+          <input id="fileInput" class="file-input" type="file" accept="image/*" />
+          <div class="drop-intro">
+            <div class="glyph" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M12 16V4M12 4l-4 4M12 4l4 4" stroke="#0f766e" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5" stroke="#0f766e" stroke-width="1.7" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div>
+              <div style="font-weight: 700; font-size: 14px;">이미지를 여기로 끌어다 놓기</div>
+              <div style="color: var(--muted); font-size: 12px; margin-top: 3px;">PNG / JPG / WebP 권장</div>
+            </div>
+          </div>
+
+          <div id="emptyState" class="empty-state">
+            업로드한 이미지를 기준으로 유사도 상위 Top-K를 찾고, 메타데이터를 요약해 브리핑을 제공합니다.
+          </div>
+
+          <div id="previewWrap" class="preview" hidden>
+            <div class="thumb" id="thumbBox">IMG</div>
+            <div class="pmeta">
+              <div class="fname" id="fileName">-</div>
+              <div class="fsub" id="fileMeta">-</div>
+              <div class="actions">
+                <button id="btnRun" class="btn primary" type="button">실행</button>
+                <button id="btnClear" class="btn danger" type="button">제거</button>
+                <button id="btnCopySummary" class="btn ghost" type="button" disabled>브리핑 복사</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="control-row">
+          <label for="topK">Top-K</label>
+          <input id="topK" type="range" min="1" max="10" value="5" />
+          <span id="topKValue" class="mono">5</span>
+        </div>
+
+        <div class="panel-foot">
+          <span class="mono">POST /api/similarity-search</span>
+          <span>multipart/form-data</span>
+          <span class="mono">image, topK</span>
+        </div>
+      </section>
+
+      <section class="panel panel-output stagger" style="--delay: 0.3s;">
+        <div class="panel-head">
+          <div>
+            <h2>2. 브리핑</h2>
+            <p>LLM 요약 결과 출력</p>
+          </div>
+          <div class="statusline">
+            <span id="spinner" class="spinner"></span>
+            <span id="statusText" aria-live="polite">대기 중</span>
+            <span id="timeText" class="mono">--:--</span>
+          </div>
+        </div>
+
+        <textarea id="briefBox" class="brief" placeholder="요약 브리핑이 여기에 출력됩니다." readonly></textarea>
+
+        <div class="divider"></div>
+
+        <div class="related">
+          <div class="section-head">
+            <h3>3. 관련 기록 Top-5</h3>
+            <p>유사도 상위 이력과 핵심 메타데이터</p>
+          </div>
+          <div id="recordsGrid" class="records-grid"></div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="slides">
+          <div class="section-head">
+            <h3>4. 분석 슬라이드</h3>
+            <p>클릭해서 확대 확인</p>
+          </div>
+          <div class="slide-controls">
+            <button id="btnPrevSlides" class="btn ghost" type="button">이전</button>
+            <button id="btnNextSlides" class="btn ghost" type="button">다음</button>
+          </div>
+          <div id="slidesTrack" class="slides-track"></div>
+        </div>
+      </section>
+    </main>
+
+    <section class="guide stagger" style="--delay: 0.35s;">
+      <div class="guide-title">Backend Wiring Checklist</div>
+      <div class="guide-body">
+        <div><span class="mono">POST /api/similarity-search</span> → <span class="mono">{ topK, matches, slides }</span></div>
+        <div><span class="mono">POST /api/summarize</span> → <span class="mono">{ summary }</span></div>
+        <div>동일 도메인 호출을 기본으로 사용하며, 외부 호출 시 CORS 허용이 필요합니다.</div>
+      </div>
+    </section>
+  </div>
+
+  <div id="modalBack" class="modal-back" role="dialog" aria-modal="true">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">
+          <span id="modalTitleText">Preview</span>
+          <span id="modalBadge" class="badge">--</span>
+        </div>
+        <button id="btnCloseModal" class="btn ghost" type="button">닫기</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-img"><img id="modalImg" alt="preview" /></div>
+        <div class="modal-meta">
+          <table>
+            <tbody id="modalTable"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button id="btnCopyMeta" class="btn" type="button">메타데이터 복사</button>
+        <button id="btnDownloadImg" class="btn ghost" type="button">이미지 저장</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast" class="toast"></div>
+</body>
+</html>
