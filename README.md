@@ -29,3 +29,4 @@ http://localhost:8000
 
 - 백엔드 API 연동은 `POST /api/similarity-search`, `POST /api/summarize` 엔드포인트를 구현하면 됩니다.
 - 상세한 백엔드 구조 가이드는 `BACKEND_GUIDE.md`에 정리되어 있습니다.
+- 예시 서비스/추론 코드는 `app/backend/service.py`, `app/backend/function.py`, `app/inference/embedding.py`, `app/inference/index.py`, `app/inference/llm_summary.py`에 추가되어 있습니다.
